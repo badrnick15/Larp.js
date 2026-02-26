@@ -1,7 +1,15 @@
 {
   "name": "CustomReplacer",
+  "description": "Replaces custom text + injects GG Sans font",
+  "authors": [
+    {
+      "name": "extor",
+      "id": "252285392986832901"
+    }
+  ],
   "version": "1.0.0",
-  "description": "Replaces custom text and injects gg sans font",
   "main": "index.js",
-  "author": "extor"
+  "vendetta": {
+    "icon": "ic_badge_staff"
+  }
 }
