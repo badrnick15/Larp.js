@@ -1,7 +1,7 @@
 {
   "name": "CustomReplacer",
-  "description": "Replaces custom text and injects font",
   "version": "1.0.0",
-  "author": "extor",
-  "main": "index.js"
+  "description": "Replaces custom text and injects gg sans font",
+  "main": "index.js",
+  "author": "extor"
 }
