@@ -1,4 +1,4 @@
-export default {
+module.exports = {
     name: "CustomReplacer",
     description: "Replaces custom text and injects gg sans font",
     version: "1.0.0",
@@ -25,11 +25,11 @@ export default {
                 let text = node.nodeValue;
 
                 for (const [orig, repl] of Object.entries(replacements)) {
-                    text = text.replaceAll(orig, repl);
+                    text = text.split(orig).join(repl);
                 }
 
                 for (const [orig, repl] of Object.entries(dateReplacements)) {
-                    text = text.replaceAll(orig, repl);
+                    text = text.split(orig).join(repl);
                 }
 
                 node.nodeValue = text;
@@ -38,7 +38,7 @@ export default {
 
                 if (node.placeholder) {
                     for (const [orig, repl] of Object.entries(replacements)) {
-                        node.placeholder = node.placeholder.replaceAll(orig, repl);
+                        node.placeholder = node.placeholder.split(orig).join(repl);
                     }
                 }
 
@@ -46,7 +46,7 @@ export default {
                     let label = node.getAttribute("aria-label");
 
                     for (const [orig, repl] of Object.entries(replacements)) {
-                        label = label.replaceAll(orig, repl);
+                        label = label.split(orig).join(repl);
                     }
 
                     node.setAttribute("aria-label", label);
