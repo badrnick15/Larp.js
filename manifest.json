@@ -1,15 +1,8 @@
 {
-  "name": "CustomReplacer",
-  "description": "Replaces custom text + injects GG Sans font",
+  "name": "LarpyUsers",
+  "description": "Inject fake badges, remove quest badge, replace usernames and dates",
   "authors": [
-    {
-      "name": "extor",
-      "id": "252285392986832901"
-    }
+    { "name": "extor" }
   ],
-  "version": "1.0.0",
-  "main": "index.js",
-  "vendetta": {
-    "icon": "ic_badge_staff"
-  }
+  "main": "index.js"
 }
