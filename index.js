@@ -1,103 +1,146 @@
-module.exports = {
-    name: "CustomReplacer",
-    description: "Replaces custom text and injects gg sans font",
-    version: "1.0.0",
-    author: "extor",
+import { after } from "@vendetta/patcher";
+import { findByProps, findAll } from "@vendetta/metro";
+import { React } from "@vendetta/metro/common";
 
-    start() {
-        console.log("CustomReplacer started");
+let unpatchBadges;
+let textPatches = [];
 
-        const replacements = {
-            "scarning": "no",
-            "ok_uh": "ok",
-            "anonymousdoxbinuser": "end",
-            "teriblys": "oh"
-        };
+const TARGET_USERNAME = "ok"; // change this if needed
 
-        const dateReplacements = {
-            "Feb 27, 2024": "September 10, 2020",
-            "Feb 16, 2025": "November 20, 2016",
-            "Feb 18, 2024": "May 13, 2015"
-        };
+// =====================
+// FAKE BADGES
+// =====================
+const fakeBadges = [
+  {
+    tooltip: "HypeSquad Events",
+    icon: "https://cdn.discordapp.com/badge-icons/bf01d1073931f921909045f3a39fd264.png"
+  },
+  {
+    tooltip: "Early Verified Bot Developer",
+    icon: "https://cdn.discordapp.com/badge-icons/6df5892e0f35b051f8b61eace34f4967.png"
+  },
+  {
+    tooltip: "Discord Bug Hunter (Tier 1)",
+    icon: "https://cdn.discordapp.com/badge-icons/2717692c7dca7289b35297368a940dd0.png"
+  }
+];
 
-        function replaceTextInNode(node) {
-            if (node.nodeType === Node.TEXT_NODE) {
-                let text = node.nodeValue;
+// =====================
+// TEXT REPLACEMENTS
+// =====================
+const replacements = {
+  "scarning": "no",
+  "ashiaugiygf": "ok",
+  "anonymousdoxbinuser": "end",
+  "teriblys": "lost"
+};
 
-                for (const [orig, repl] of Object.entries(replacements)) {
-                    text = text.split(orig).join(repl);
-                }
+const dateReplacements = {
+  "Feb 27, 2024": "September 10, 2020",
+  "Feb 16, 2025": "November 20, 2016",
+  "Feb 18, 2024": "May 13, 2015"
+};
 
-                for (const [orig, repl] of Object.entries(dateReplacements)) {
-                    text = text.split(orig).join(repl);
-                }
+// =====================
+// TEXT HELPER
+// =====================
+function replaceText(content) {
+  if (typeof content !== "string") return content;
 
-                node.nodeValue = text;
+  let newText = content;
 
-            } else if (node.nodeType === Node.ELEMENT_NODE) {
+  for (const [orig, repl] of Object.entries(replacements)) {
+    newText = newText.split(orig).join(repl);
+  }
 
-                if (node.placeholder) {
-                    for (const [orig, repl] of Object.entries(replacements)) {
-                        node.placeholder = node.placeholder.split(orig).join(repl);
-                    }
-                }
+  for (const [orig, repl] of Object.entries(dateReplacements)) {
+    newText = newText.split(orig).join(repl);
+  }
 
-                if (node.hasAttribute && node.hasAttribute("aria-label")) {
-                    let label = node.getAttribute("aria-label");
+  return newText;
+}
 
-                    for (const [orig, repl] of Object.entries(replacements)) {
-                        label = label.split(orig).join(repl);
-                    }
+export default {
+  onLoad() {
 
-                    node.setAttribute("aria-label", label);
-                }
+    // =====================
+    // BADGE PATCH
+    // =====================
+    const UserBadgesModule = findByProps("UserBadges");
 
-                node.childNodes.forEach(replaceTextInNode);
-            }
+    if (UserBadgesModule?.UserBadges) {
+      unpatchBadges = after("UserBadges", UserBadgesModule, (args, res) => {
+        if (!res?.props) return res;
+
+        const user = args[0]?.user;
+        if (!user) return res;
+
+        // Remove Quest badge
+        if (Array.isArray(res.props.children)) {
+          res.props.children = res.props.children.filter(
+            badge => badge?.props?.tooltipText !== "Completed a Quest"
+          );
         }
 
-        function scanAndReplace(root = document.body) {
-            replaceTextInNode(root);
+        // Inject fake badges
+        if (user.username === TARGET_USERNAME) {
+          if (!Array.isArray(res.props.children)) {
+            res.props.children = [];
+          }
+
+          fakeBadges.forEach(b => {
+            res.props.children.push(
+              React.createElement("img", {
+                src: b.icon,
+                style: {
+                  width: 20,
+                  height: 20,
+                  marginLeft: 4
+                },
+                accessibilityLabel: b.tooltip
+              })
+            );
+          });
         }
 
-        // Inject font
-        const fontLink = document.createElement("link");
-        fontLink.href = "https://cdn.jsdelivr.net/gh/dsrkafuu/gg-sans/css/ggsans.css";
-        fontLink.rel = "stylesheet";
-        document.head.appendChild(fontLink);
-
-        const style = document.createElement("style");
-        style.innerHTML = `
-            * {
-                font-family: 'gg sans', 'Segoe UI', 'Helvetica Neue', sans-serif !important;
-            }
-        `;
-        document.head.appendChild(style);
-
-        // Initial run
-        scanAndReplace();
-
-        // Observe changes
-        this.observer = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-                mutation.addedNodes.forEach((node) => {
-                    if (node.nodeType === Node.ELEMENT_NODE) {
-                        scanAndReplace(node);
-                    }
-                });
-            });
-        });
-
-        this.observer.observe(document.body, {
-            childList: true,
-            subtree: true
-        });
-    },
-
-    stop() {
-        console.log("CustomReplacer stopped");
-        if (this.observer) {
-            this.observer.disconnect();
-        }
+        return res;
+      });
     }
+
+    // =====================
+    // GLOBAL TEXT PATCH
+    // =====================
+    const TextModules = findAll(
+      m => m?.default?.displayName?.includes?.("Text")
+    );
+
+    TextModules.forEach(mod => {
+      if (!mod.default) return;
+
+      const unpatch = after("default", mod, (args, res) => {
+        if (!res?.props?.children) return res;
+
+        if (typeof res.props.children === "string") {
+          res.props.children = replaceText(res.props.children);
+        }
+
+        if (Array.isArray(res.props.children)) {
+          res.props.children = res.props.children.map(child =>
+            typeof child === "string" ? replaceText(child) : child
+          );
+        }
+
+        return res;
+      });
+
+      textPatches.push(unpatch);
+    });
+
+    console.log("LarpyUsers loaded.");
+  },
+
+  onUnload() {
+    if (unpatchBadges) unpatchBadges();
+    textPatches.forEach(p => p());
+  }
 };
